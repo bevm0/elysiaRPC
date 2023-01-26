@@ -1,0 +1,28 @@
+# desktop configuration files
+.DS_Store
+desktop.ini
+
+# very big
+node_modules/
+
+# outputs
+dist/
+.svelte-kit/
+build/
+.turbo/
+.vercel/
+vite.config.js.timestamp-*
+
+# ignore other package managers: use [pnpm](https://pnpm.io/)
+package-lock.json
+yarn.lock
+
+# private
+.env
+.env.*
+credentials.json
+
+# error logs
+.pnpm-debug.log
+yarn-error.log
+npm-debug.log
