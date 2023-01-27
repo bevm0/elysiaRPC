@@ -4,6 +4,7 @@
     "strict": true,
     "esModuleInterop": true,
     "target": "esnext",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "module": "esnext"
   }
 }

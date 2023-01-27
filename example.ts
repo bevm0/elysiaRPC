@@ -10,59 +10,59 @@ interface ExpressCtx {
 /**
  * initialize a router builder
  */
-let router = new Router<undefined, ExpressCtx>()
+let router = new Router().context<ExpressCtx>()
 
 export const myRouter = router.build({
   a: {
     b: {
-      c: router.procedure.input(z.boolean()).GET(({ input }) => input),
-      d: router.procedure.input(z.number()).POST(({ input }) => input),
-      e: router.procedure.input(z.string()).POST(({ input }) => input),
-      f: router.procedure.POST(() => 'ni'),
-      g: router.procedure
+      c: router.procedure.input(z.boolean()).GET((input) => input),
+      d: router.procedure.input(z.number()).POST((input) => input + 420),
+      e: router.procedure.input(z.string()).POST((input) => input),
+      f: router.procedure.POST(() => 'nice'),
+      g: router.procedure.POST(() => {})
     }
   }
 })
 
+async function start() {
+  const cFetch = await myRouter.a.b.c._fetch(false).then(res => res.json())
+  const dFetch = await myRouter.a.b.d._fetch(123).then(res => res.json())
+  const eFetch = await myRouter.a.b.e._fetch('hi').then(res => res.json())
+  const fFetch = await myRouter.a.b.f._fetch().then(res => res.json())
+  const gFetch = await myRouter.a.b.g._fetch().then(res => res.json())
 
-const cFetch = myRouter.a.b.c.fetch().then(res => res.json())
-const dFetch = myRouter.a.b.d.fetch().then(res => res.json())
-const eFetch = myRouter.a.b.e.fetch().then(res => res.json())
-const fFetch = myRouter.a.b.f.fetch().then(res => res.json())
-const gFetch = myRouter.a.b.g.fetch().then(res => res.json())
+  const cResolved = myRouter.a.b.c._resolver(true)
+  const dResolved = myRouter.a.b.d._resolver(69)
+  const eResolved = myRouter.a.b.e._resolver('hello')
+  const fResolved = myRouter.a.b.f._resolver()
+  const gResolved = myRouter.a.b.g._resolver()
 
-const cResolved = async (req: Request, res: Response) => await myRouter.a.b.c.resolve({ ctx: { req, res }, input: true })
-const dResolved = async (req: Request, res: Response) => await myRouter.a.b.d.resolve({ ctx: { req, res }, input: 123 })
-const eResolved = async (req: Request, res: Response) => await myRouter.a.b.e.resolve({ ctx: { req, res }, input: 'hello' })
-const fResolved = async (req: Request, res: Response) => await myRouter.a.b.f.resolve()
-const gResolved = async (req: Request, res: Response) => await myRouter.a.b.g.resolve()
+  const all = {
+    c: {
+      fetch: cFetch,
+      resolve: cResolved,
+    },
+    d: {
+      fetch: dFetch,
+      resolve: dResolved,
+    },
+    e: {
+      fetch: eFetch,
+      resolve: eResolved,
+    },
+    f: {
+      fetch: fFetch,
+      resolve: fResolved,
+    },
+    g: {
+      fetch: gFetch,
+      resolve: gResolved
+    }
+  } as const
+  console.log(all)
+}
 
-const all = {
-  c: {
-    fetch: cFetch,
-    resolve: cResolved,
-  },
-  d: {
-    fetch: dFetch,
-    resolve: dResolved,
-  },
-  e: {
-    fetch: eFetch,
-    resolve: eResolved,
-  },
-  f: {
-    fetch: fFetch,
-    resolve: fResolved,
-  },
-  g: {
-    fetch: gFetch,
-    resolve: gResolved
-  }
-} as const
-
-console.log(all)
+start()
 
 export type myRouter = typeof myRouter
-
-export type Test = myRouter['a']['b']['g']['_def']['method']
 
