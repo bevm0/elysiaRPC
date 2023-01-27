@@ -45,16 +45,66 @@ interface Router<TParams = undefined, TCtx = undefined> {
  */
 let router: Router
 
-export const myRouter = router.use(() => {}).build({
+export const myRouter = router.build({
   welcome: router.procedure.GET((_args) =>  'hello world'),
-  goodbye: router.procedure.input(z.number()).GET(({ input }) => `goodbye ${input}`),
+  sus: router.procedure.input(z.number()).POST(({ input }) => `goodbye ${input}`),
   add: router.procedure.input(z.number()).PATCH(({ input }) => `goodbye ${input}`),
-  sub: router.use(() => {}).build({
-    add: router.procedure.input(z.number()).PATCH(({ input }) => `goodbye ${input}`),
-  })
+  sub: {
+    minus: router.procedure.input(z.number()).PATCH(({ input }) => `goodbye ${input}`),
+    subsub: {
+      minus: router.procedure.input(z.number()).PATCH(({ input }) => `goodbye ${input}`),
+    }
+  }
 })
 
+type GetFetch = () => void
+type PatchFetch = () => void
+type PostFetch = () => void
+
+type ExtractRecursive<PRecord extends Record<any, any>> = {
+  [k in keyof PRecord]: 
+    PRecord[k] extends Procedure<any, any, any> ?
+      PRecord[k]['_def']['type'] extends 'GET' ? GetFetch :
+      PRecord[k]['_def']['type'] extends 'PATCH' ? PatchFetch :
+      PRecord[k]['_def']['type'] extends 'POST' ? PostFetch
+      : never
+    : 
+      ExtractRecursive<PRecord[k]>
+}
+
+function ParseProcedureRecord(p: ProcedureEntry) {
+}
+
+function ParseProcedure(p: Procedure<any, any, any>) {
+  return p.input
+}
+
+Object.keys(myRouter).map(k => {
+  let key = k as keyof myRouter
+  let m = myRouter[key]
+  if ('input' in m) {
+    let y = m
+  }
+  const res = ParseProcedureRecord(m)
+  return res
+})
+
+type FlattenObjectKeys<T extends Record<string, unknown>, Key = keyof T> = 
+  Key extends string
+  ? T[Key] extends Record<string, unknown>
+    ? `${Key}.${FlattenObjectKeys<T[Key]>}`
+    : `${Key}`
+  : never
+
+export type ExtractRecursiveType<TR extends Record<any, any>> = {
+  [k in keyof TR]
+}
+
 export type myRouter = typeof myRouter
+
+export type Extracted = ExtractRecursive<myRouter>
+export type ExtractedKeys = FlattenObjectKeys<myRouter>
+
 
 /**
  * default params for a procedure
@@ -68,6 +118,7 @@ export interface ProcedureParams<TInput = any, TCtx = any> {
  * built procedure
  */
 export interface Procedure<TType extends Method, TParams extends ProcedureParams, TOutput> extends ProcedureBuilder<TParams> {
+  type: TType
   _def: {
     type: TType
     params: TParams
