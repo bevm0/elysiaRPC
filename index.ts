@@ -1,9 +1,34 @@
-import { z } from 'zod'
 /**
  * HTTP methods 
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods}
  */
-type Method = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS' | 'TRACE' | 'CONNECT'
+const Methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT'] as const
+type AnyString = string & {}
+type Method = (typeof Methods)[number] | AnyString
+
+/**
+ */
+export interface Procedure {
+  _method: any
+  _parser: any
+  _input: any
+  _ctx: any
+  _output: any
+  _resolver: any
+  _fetch: any
+}
+
+/**
+ */
+interface DefaultProcedure {
+  _method: undefined
+  _ctx: undefined
+  _input: undefined
+  _output: undefined
+  _parser: undefined
+  _fetch: undefined
+  _resolver: undefined
+}
 
 /**
  * procedure record maps strings to procedure entries
@@ -27,7 +52,7 @@ type MaybePromise<T> = T | Promise<T>
 // const createFetch = (path: string, method: Method) => (init: RequestInit) => fetch(path, { method, ...init })
 
 const createTestFetch = 
-  (path: string, method: Method, result: any) => 
+  (path: string, method: any, result: any) => 
     async (init?: RequestInit) => ({
       async json() {
         return {
@@ -46,16 +71,6 @@ interface TypedResponse<T> extends Response {
   json(): Promise<T>
 }
 
-interface DefaultProcedure {
-  _method: undefined
-  _input: undefined
-  _ctx: undefined
-  _output: undefined
-  _parser: undefined
-  _resolver: undefined
-  _fetch: undefined
-}
-
 /**
  * router entry point
  */
@@ -67,8 +82,8 @@ export class Router<TProcedure extends Procedure=DefaultProcedure> {
   context<T>() {
     return new Router<{
       _method: undefined
-      _input: undefined
       _ctx: T
+      _input: undefined
       _output: undefined
       _parser: undefined
       _resolver: undefined
@@ -84,7 +99,7 @@ export class Router<TProcedure extends Procedure=DefaultProcedure> {
   /**
    * accepts a procedure record, i.e. to strongly type its keys
    */
-  build<T extends ProcedureRecord>(record: T): T {
+  build<T extends ProcedureRecord>(record: T) {
     return record
   }
 }
@@ -95,27 +110,29 @@ export class Router<TProcedure extends Procedure=DefaultProcedure> {
 function noop() {
 }
 
-/**
- * async noop
- */
-async function asyncNoop(args?: any) {
-  return {
-    json: async () => args
-  }
-}
+type UnionContainsUndefined<T> = undefined extends T ? true : false
+type x = undefined | string
+export type y = UnionContainsUndefined<x>
 
+/**
+ * wraps around a procedure to provide metadata
+ */
 export class ProcedureBuilder<TProcedure extends Procedure=DefaultProcedure> implements Procedure {
   _method: TProcedure['_method']
-  _input: TProcedure['_input']
   _ctx: TProcedure['_ctx']
+  _input: TProcedure['_input']
   _output: TProcedure['_output']
   _parser: TProcedure['_parser']
-  _resolver: (input?: TProcedure['_input'], ctx?: TProcedure['_ctx']) => MaybePromise<TProcedure['_output']>
 
   /**
    * @public client-side strongly typed fetch
    */
   _fetch: TProcedure['_fetch']
+
+  /**
+   * @public server-side resolver
+   */
+  _resolver: TProcedure['_resolver']
 
   constructor(builder: Partial<Procedure> = {}) {
     const { _input, _ctx, _resolver, _fetch, _method, _output, _parser } = builder
@@ -128,14 +145,14 @@ export class ProcedureBuilder<TProcedure extends Procedure=DefaultProcedure> imp
     this._fetch = _fetch || noop
   }
 
-  input<$Parser extends Parser>(schema?: $Parser) {
-    const _input: inferParser<$Parser>['out'] = schema && 'parse' in schema ? schema.parse : schema?._input
+  input<TParser extends Parser>(schema?: TParser) {
+    const _input: inferParser<TParser>['out'] = schema && 'parse' in schema ? schema.parse : schema?._input
     const _ctx: TProcedure['_ctx'] = this._ctx
 
     /**
      * create a new procedure builder where the args have been narrowed accordingly
      */
-    const pb = new ProcedureBuilder<{
+    return new ProcedureBuilder<{
       _method: TProcedure['_method']
       _ctx: typeof _ctx
       _input: typeof _input
@@ -144,41 +161,31 @@ export class ProcedureBuilder<TProcedure extends Procedure=DefaultProcedure> imp
       _resolver: TProcedure['_resolver']
       _fetch: TProcedure['_fetch']
     }>({ _input, _ctx })
-    return pb
   }
 
-  /**
-   * create procedure with a defined resolver and fetcher for a GET request
-   */
-  GET<Output>(_resolver: (input: TProcedure['_input'], ctx: TProcedure['_ctx']) => MaybePromise<Output>) {
-    const _fetch = createTestFetch('path', 'GET', 123)
-    const pb = new ProcedureBuilder<{
-      _method: TProcedure['_method']
+  method<const TMethod extends Method, Output>(
+    _method: TMethod | Method, 
+    _resolver: 
+      TProcedure['_input'] extends undefined ? 
+        TProcedure['_ctx'] extends undefined ? 
+          () => MaybePromise<Output> : 
+        (ctx: TProcedure['_ctx']) => MaybePromise<Output> : 
+      TProcedure['_ctx'] extends undefined ? 
+          (input: TProcedure['_input']) => MaybePromise<Output> : 
+      (input: TProcedure['_input'], ctx?: TProcedure['_ctx']) => MaybePromise<Output>
+  ) {
+    // TODO: fetch should be created by an external hook generator function
+    const _fetch = createTestFetch('path', _method, 123)
+
+    return new ProcedureBuilder<{
+      _method: TMethod
       _input: TProcedure['_input']
       _ctx: TProcedure['_ctx']
       _output: Output
       _parser: TProcedure['_parser']
-      _resolver: TProcedure['_resolver']
+      _resolver: typeof _resolver
       _fetch: TProcedure['_input'] extends undefined ? (init?: RequestInit) => Promise<TypedResponse<Output>> : (input: TProcedure['_input'], init?: RequestInit) => Promise<TypedResponse<Output>>
-    }>({ _resolver, _fetch })
-    return pb
-  }
-
-  /**
-   * create procedure with a defined resolver and fetcher for a GET request
-   */
-  POST<Output>(_resolver: (input: TProcedure['_input'], ctx: TProcedure['_ctx']) => MaybePromise<Output>) {
-    const _fetch = createTestFetch('path', 'POST', 'post 123')
-    const pb = new ProcedureBuilder<{
-      _method: TProcedure['_method']
-      _input: TProcedure['_input']
-      _ctx: TProcedure['_ctx']
-      _output: Output
-      _parser: TProcedure['_parser']
-      _resolver: TProcedure['_resolver']
-      _fetch: TProcedure['_input'] extends undefined ? (init?: RequestInit) => Promise<TypedResponse<Output>> : (input: TProcedure['_input'], init?: RequestInit) => Promise<TypedResponse<Output>>
-    }>({ _resolver, _fetch })
-    return pb
+    }>({ _resolver, _fetch, _method })
   }
 }
 
@@ -189,22 +196,7 @@ export class ProcedureBuilder<TProcedure extends Procedure=DefaultProcedure> imp
  */
 export type Transform<PRecord extends Record<any, any>> = {
   [k in keyof PRecord]: 
-    PRecord[k] extends Procedure ?
-      PRecord[k]['method'] extends 'GET'    ? 'Get Signature'   :
-      PRecord[k]['method'] extends 'PATCH'  ? 'Patch Signature' :
-      PRecord[k]['method'] extends 'HEAD'   ? 'Head Signature'  :
-      PRecord[k]['method'] extends 'POST'   ? 'Post Signature'  : never
-    : Transform<PRecord[k]>
-}
-
-export interface Procedure {
-  _method: any
-  _parser: any
-  _input: any
-  _ctx: any
-  _output: any
-  _resolver: any
-  _fetch: any
+    PRecord[k] extends Procedure ? PRecord[k]['_output'] : Transform<PRecord[k]>
 }
 
 //-----------------------------------------------------------------------------------
@@ -232,13 +224,3 @@ export type inferParser<TParser extends Parser> =
     : TParser extends ParserWithoutInput<infer $InOut>
     ? { in: $InOut; out: $InOut; }
     : never;
-
-type KeysOfType<T, SelectedType> = {
-  [key in keyof T]: SelectedType extends T[key] ? key : never;
-}[keyof T];
-
-type Optional<T> = Partial<Pick<T, KeysOfType<T, undefined>>>;
-
-type Required<T> = Omit<T, KeysOfType<T, undefined>>;
-
-export type UndefinedOptional<T> = Optional<T> & Required<T>;

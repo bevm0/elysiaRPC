@@ -5,6 +5,7 @@
     "esModuleInterop": true,
     "target": "esnext",
     "moduleResolution": "node",
-    "module": "esnext"
+    "module": "esnext",
+    "outDir": "dist"
   }
 }
