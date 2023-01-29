@@ -8,7 +8,7 @@ interface TypedResponse<Output> extends Response {
 /**
  * wrapper around fetch
  */
-export const _fetch = <Output>(path: string, input: any, init: RequestInit): Promise<TypedResponse<Output>> => {
+export const createFetch = <Output>(path: string, input: any, init: RequestInit): Promise<TypedResponse<Output>> => {
   /**
    * if GET request, then encode the input as a query string
    */

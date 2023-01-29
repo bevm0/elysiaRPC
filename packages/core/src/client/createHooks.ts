@@ -1,3 +1,4 @@
+// import { createFetch } from './fetch'
 import { HandlerBuilder, Handler } from '../handler'
 import type { Transform, Flatten } from '../utils'
 
@@ -24,14 +25,17 @@ interface ClientHooks<T extends Record<any, any>> {
  * internal fetch hooks are used to create the fetch functions
  */
 export function createClientHooks<T extends Record<any, any>> (current: T, base=''): ClientHooks<T> {
+  let path: string
   let key: string
   let internal: any = {}
   let hooks: any = {}
   let x: any
+  let f: any
 
   for (key in current) {
     if ('_path' in current[key]) {
-      internal[`${base}${key}${current[key]._path || ''}`] =  current[key].fetch
+      path = `${base}${key}${current[key]._path || ''}`
+      internal[path] =  current[key].fetch
       hooks[key] = current[key].fetch
     }
     else {

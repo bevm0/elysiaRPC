@@ -1,6 +1,5 @@
 import { Static } from '@sinclair/typebox'
 import type { TSchema } from '@sinclair/typebox/typebox'
-import { _fetch } from './client/fetch'
 import type { AnyHttpMethod } from './http/methods'
 import type { CleanType, Overwrite } from './utils'
 import type { Context } from './server/context'
@@ -13,11 +12,6 @@ export interface Handler {
    * type of HTTP request (custom allowed)
    */
   _method: any
-
-  /**
-   * prefix for URL
-   */
-  _basePath: any
 
   /**
    * URL for the request
@@ -55,7 +49,6 @@ export interface Handler {
  */
 export interface UninitializedHandler extends Handler{
   _method: undefined
-  _basePath: ''
   _path: undefined
   _ctx: undefined
   _schema: undefined
@@ -69,7 +62,6 @@ export interface UninitializedHandler extends Handler{
  */
 export class HandlerBuilder<THandler extends Handler=UninitializedHandler> {
   _method: THandler['_method']
-  _basePath: THandler['_basePath']
   _path: THandler['_path']
   _ctx: THandler['_ctx']
   _input: THandler['_input']
@@ -79,7 +71,6 @@ export class HandlerBuilder<THandler extends Handler=UninitializedHandler> {
 
   constructor(args: Partial<Handler> = {}) {
     this._method = args._method
-    this._basePath = args._basePath || ''
     this._path = args._path
     this._input = args._input
     this._resolver = args._resolver
@@ -93,7 +84,7 @@ export class HandlerBuilder<THandler extends Handler=UninitializedHandler> {
    */
   route<TMethod extends AnyHttpMethod, const TPath extends string>
         (_method: TMethod, _path: TPath): 
-          HandlerBuilder<Overwrite<THandler, { _method: TMethod, _path: `${THandler['_basePath']}${TPath}` }>> {
+          HandlerBuilder<Overwrite<THandler, { _method: TMethod, _path: TPath }>> {
     return new HandlerBuilder({ ...this, _method, _path })
   }
 
@@ -136,7 +127,10 @@ export class HandlerBuilder<THandler extends Handler=UninitializedHandler> {
    * @remarks not actually assigned; used only for type info, dynamically during runtime
    */
   fetch: FetchSignature<THandler> = (...args: any[]) => {
-    return _fetch(this._path, args[0], args[1])
+    /**
+     * not the real implementation of fetch!
+     */
+    return args as any
   }
 
 }
