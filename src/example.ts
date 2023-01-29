@@ -1,41 +1,41 @@
-import { HandlerBuilder, Handler } from './handler'
-import type { Transform, Flatten } from './utils'
+import { HandlerBuilder } from './handler'
+import { createClientHooks } from './hooks/client'
+import { createServerHooks } from './hooks/server'
+import { Type } from '@sinclair/typebox'
 
+//-----------------------------------------------------------------------------------
+// server side setup: generate a router
+//-----------------------------------------------------------------------------------
 const router = new HandlerBuilder()
 
+/**
+ * has one route: /a/b/gPost, POST, number input, returns `Hello ${input}`
+ */
 const routerRecord = {
-  a: router.route('PUT', 'aRoute').input(123).resolve(k => k.input),
-  b: router.route('GET', 'bb').input('123').resolve(k => k.input),
-  c: {
-    d: router.input(false).resolve(k => k.input),
+  '': {
+    '/a': {
+      '/b': router.route('POST', '/gPost').input(Type.Number()).resolve(({ input }) => `Hello, ${input}`),
+    }
   }
 }
 
-type routerRecord = typeof routerRecord
-export type TransformedRouterRecord = Transform<routerRecord, HandlerBuilder<Handler>, 'fetch'>['c']['d']
-export type FlatRouterRecord = Flatten<routerRecord>
-export type Hehe = {
-  [k in keyof FlatRouterRecord]: FlatRouterRecord[k]['fetch']
-}
+//-----------------------------------------------------------------------------------
+// server side usage: generate server hook
+//-----------------------------------------------------------------------------------
+const { internal: internalServer, hooks: serverHooks } = createServerHooks(routerRecord, '')
+internalServer['/a/b/gPost']({ input: 123 })
+serverHooks['']['/a']['/b']({ input: Infinity })
+
+//-----------------------------------------------------------------------------------
+// client side usage: import the defined router and generate fetch hooks
+//-----------------------------------------------------------------------------------
+const { internal: internalClient, hooks: clientHooks } = createClientHooks(routerRecord, '')
 
 /**
- * yeet
+ * returns a string
  */
-function generateFetchHooks(current: any, copy: Map<any, any>=new Map(), base=''): Map<any, any> {
-  let route: string
-  for (const key in current) {
-    route = base ? `${base}/${key}` : key
-    if ('_path' in current[key]) {
-      copy.set(route, current[key].fetch)
-    }
-    else {
-      const lowerCopy = generateFetchHooks(current[key], new Map(), route)
-      copy = new Map([...copy, ...lowerCopy])
-    }
-  }
-  return copy
-}
+const x = internalClient['/a/b/gPost']
+const y = clientHooks['']['/a']['/b']
 
-const fetchHooks = generateFetchHooks(routerRecord)
-fetchHooks.get('a/aRoute')
-console.log({ fetchHooks })
+console.log({ internal: internalClient, client: clientHooks, x, y })
+console.log(clientHooks['']['/a'])

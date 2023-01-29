@@ -76,3 +76,28 @@ export type Transform<PRecord extends Record<any, any>> = {
   [k in keyof PRecord]: 
     PRecord[k] extends HandlerBuilder<Handler> ? PRecord[k]['fetch'] : Transform<PRecord[k]>
 }
+
+export type GetParams<T> = 
+  T extends `:${infer Param}/${infer Route}` ? 
+  [Param, ...GetParams<Route>] : 
+  T extends `:${infer Param}` ? 
+  [Param] : 
+  T extends `${string}/${infer SubRoute}` ? 
+  GetParams<SubRoute> :
+  []
+
+type ParamBefore<Route extends string, Param extends string> = `:${Param}/${Route}`
+type ParamAfter<Route extends string, Param extends string> = `${Route}/:${Param}`
+type NormalRoute<Left extends string, Right extends string> = `${Left}/${Right}`
+
+/**
+ * converts a string, like `user/:id`, to a template literal type, like `user/${string}`
+ */
+export type GetRoute<T extends string> = 
+  T extends ParamBefore<infer A, any> ? 
+    `${string}/${GetRoute<A>}` : 
+    T extends ParamAfter<infer B, infer C> ?
+      C extends NormalRoute<any, infer D> ? 
+        `${GetRoute<B>}/${string}${GetRoute<D>}` :
+        `${GetRoute<B>}/${string}` : 
+      `${T}`

@@ -1,5 +1,3 @@
-import type { Handler, HandlerBuilder } from '.'
-
 /**
  * overwrite properties in T with corresponding ones in U
  */
@@ -15,21 +13,21 @@ export type CleanType<T extends object> = {
 /**
  * helper interface for explode
  */
-export type Entry = { key: string, value: any, optional: boolean };
+export type Entry = { key: any, value: any, optional: boolean };
 
 /** 
  * @see {@link https://stackoverflow.com/questions/69095054/how-to-deep-flatten-a-typescript-interface-with-union-types-and-keep-the-full-ob}
  */
-export type Explode<T> =
-    T extends HandlerBuilder<Handler> ? {
-      key: T['_path'],
+export type Explode<T, TObj, Key extends keyof TObj> =
+    T extends TObj ? {
+      key: T[Key],
       value: T,
       optional: false
     } : { 
       [K in keyof T]: 
-        K extends string ? Explode<T[K]> extends infer E ? E extends Entry ?
+        K extends string ? Explode<T[K], TObj, Key> extends infer E ? E extends Entry ?
         {
-            key: `${K}${E['key'] extends "" ? "" : `/`}${E['key']}`,
+            key: `${K}${E['key']}`,
             value: E['value'],
             optional: E['key'] extends "" ? {} extends Pick<T, K> ? true : false : E['optional']
         }
@@ -53,7 +51,7 @@ export type Collapse<T extends Entry> = (
 /**
  * flattens an object
  */
-export type Flatten<T> = Collapse<Explode<T>>
+export type Flatten<T, TObj, Key extends keyof TObj> = Collapse<Explode<T, TObj, Key>>
 
 /**
  * transform all values of an object to a key
