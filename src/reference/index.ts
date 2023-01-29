@@ -6,6 +6,7 @@ const Methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS', 'TR
 type AnyString = string & {}
 type Method = (typeof Methods)[number] | AnyString
 
+
 /**
  */
 export interface Procedure {
