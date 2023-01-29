@@ -1,0 +1,9 @@
+{
+  "name": "@examples/basic",
+  "version": "0.1.0",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@elysiaRPC/core": "*",
+    "@sinclair/typebox": "^0.25.21"
+  }
+}

@@ -56,7 +56,7 @@ export type Flatten<T, TObj, Key extends keyof TObj> = Collapse<Explode<T, TObj,
 /**
  * transform all values of an object to a key
  */
-export type Transform<PRecord extends Record<any, any>, TObject, Key extends keyof TObject> = {
-  [k in keyof PRecord]: 
-    PRecord[k] extends TObject ? PRecord[k][Key] : Transform<PRecord[k], TObject, Key>
+export type Transform<PRecord extends Record<any, any>, TObject, Key extends keyof TObject, Key2 extends keyof TObject> = {
+  [k in keyof PRecord as PRecord[k] extends TObject ? k extends string ? `${k}${PRecord[k][Key2]}` : k : k]: 
+    PRecord[k] extends TObject ? PRecord[k][Key] : Transform<PRecord[k], TObject, Key, Key2>
 }

@@ -8,5 +8,9 @@
     "module": "NodeNext",
     "outDir": "dist",
     "baseUrl": ".",
+    "paths": {
+      "@elysiaRPC/core": ["packages/core/src"],
+      "@elysiaRPC/core/*": ["packages/core/src/*"],
+    }
   }
 }

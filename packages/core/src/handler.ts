@@ -1,9 +1,9 @@
 import { Static } from '@sinclair/typebox'
-import { _fetch } from './fetch'
 import type { TSchema } from '@sinclair/typebox/typebox'
+import { _fetch } from './client/fetch'
 import type { AnyHttpMethod } from './http/methods'
 import type { CleanType, Overwrite } from './utils'
-import type { Context } from './context'
+import type { Context } from './server/context'
 
 /**
  * generic request handler
@@ -133,6 +133,7 @@ export class HandlerBuilder<THandler extends Handler=UninitializedHandler> {
    * client-side: make a request
    * @param args the input for this handler
    * @returns fetch request to get the data
+   * @remarks not actually assigned; used only for type info, dynamically during runtime
    */
   fetch: FetchSignature<THandler> = (...args: any[]) => {
     return _fetch(this._path, args[0], args[1])

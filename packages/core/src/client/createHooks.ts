@@ -17,7 +17,7 @@ export type InternalClientHooks<TRouter> = {
  */
 interface ClientHooks<T extends Record<any, any>> {
   internal: InternalClientHooks<T>
-  hooks: Transform<T, HandlerBuilder<Handler>, 'fetch'>
+  hooks: Transform<T, HandlerBuilder<Handler>, 'fetch', '_path'>
 }
 
 /**
