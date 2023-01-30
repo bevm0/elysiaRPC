@@ -1,9 +1,4 @@
 /**
- * overwrite any mutual properties in Old with corresponding ones in New 
- */
-export type Overwrite<Old, New> = Pick<Old, Exclude<keyof Old, keyof New>> & New
-
-/**
  * helper interface for explode and collapse
  */
 export type Entry = { key: any, value: any, optional: boolean };

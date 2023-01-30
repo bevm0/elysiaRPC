@@ -3,23 +3,26 @@ import type { FetchOpts, TypedResponse } from './createFetch'
 import type { Handler } from '../types'
 import type { Flatten } from '../utils'
 import type { HandlerBuilder } from '../handler'
+import { inferParser } from '../parser/types'
 
 /**
  * fetch signature
  * @remarks function requires input parameter if it's defined, otherwise excluded
  */
-type FetchSignature<THandler extends Handler> = 
-  THandler['_input'] extends undefined ? 
-    (init?: RequestInit) => Promise<TypedResponse<THandler['_output']>> : 
-    (input: THandler['_input'], init?: RequestInit) => Promise<TypedResponse<THandler['_output']>>
+type FetchSignature<T extends Handler> = 
+  T['_input'] extends undefined ? 
+    T['_schema'] extends undefined ?
+      (init?: RequestInit) => Promise<TypedResponse<T['_output']>> : 
+      (input: inferParser<T['_schema']>, init?: RequestInit) => Promise<TypedResponse<T['_output']>> :
+    (input: T['_input'], init?: RequestInit) => Promise<TypedResponse<T['_output']>>
 
 /**
  * internal client hooks
  */
-export type InternalClientHooks<TRouter> = {
-  [k in keyof Flatten<TRouter, HandlerBuilder<Handler>>]: 
-    Flatten<TRouter, HandlerBuilder<Handler>>[k] extends HandlerBuilder<Handler> ? 
-      FetchSignature<Flatten<TRouter, HandlerBuilder<Handler>>[k]> : never
+export type InternalClientHooks<T> = {
+  [k in keyof Flatten<T, HandlerBuilder<Handler>>]: 
+    Flatten<T, HandlerBuilder<Handler>>[k] extends HandlerBuilder<Handler> ? 
+      FetchSignature<Flatten<T, HandlerBuilder<Handler>>[k]> : never
 }
 
 /**

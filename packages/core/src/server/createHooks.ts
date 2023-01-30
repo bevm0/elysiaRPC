@@ -58,7 +58,7 @@ export function createInnerServerHooks<T extends Record<any, any>> (current: T, 
       hooks[key] = resolver
     }
     else {
-      recursiveHooks = createServerHooks(current[key], `${base}${key}`)
+      recursiveHooks = createInnerServerHooks(current[key], `${base}${key}`, opts)
       internal = { ...internal, ...recursiveHooks.internal }
       hooks[key] = recursiveHooks.hooks
     }

@@ -2,22 +2,21 @@ import type { Handler, UninitializedHandler } from './types'
 import type { AnyHttpMethod } from './http/methods'
 import type { inferParser } from './parser/types'
 import type { Context } from './server/context'
-import type { Overwrite } from './utils'
 
 /**
  * request handler builder
  */
-export class HandlerBuilder<THandler extends Handler=UninitializedHandler> {
-  _method: THandler['_method']
-  _path: THandler['_path']
-  _ctx: THandler['_ctx']
-  _schema: THandler['_schema']
-  _input: THandler['_input']
-  _output: THandler['_output']
-  _preResolver: THandler['_preResolver']
-  _parser: THandler['_parser']
-  _resolver: THandler['_resolver']
-  _postResolver: THandler['_postResolver']
+export class HandlerBuilder<T extends Handler=UninitializedHandler> {
+  _method: T['_method']
+  _path: T['_path']
+  _ctx: T['_ctx']
+  _schema: T['_schema']
+  _input: T['_input']
+  _output: T['_output']
+  _preResolver: T['_preResolver']
+  _parser: T['_parser']
+  _resolver: T['_resolver']
+  _postResolver: T['_postResolver']
 
   constructor(args: Partial<Handler>={}) {
     this._method = args._method
@@ -32,55 +31,32 @@ export class HandlerBuilder<THandler extends Handler=UninitializedHandler> {
     this._postResolver = args._postResolver
   }
 
-  /**
-   * set HTTP method and path (URL) for the handler
+  /** 
    * TODO for TypeScript 5.0: add const modifier to generics
    */
-  route<TMethod extends AnyHttpMethod, TPath extends string>
-        (_method: TMethod, _path?: TPath): 
-          HandlerBuilder<Overwrite<THandler, { _method: TMethod, _path: TPath }>> {
-    return new HandlerBuilder({ ...this, _method, _path })
-  }
-
-  /**
-   * define the context
-   */
-  context<T>(_ctx?: Context<T>) {
-    return new HandlerBuilder<Overwrite<THandler, { _ctx: T }>>({ ...this, _ctx })
-  }
-
-  /**
-   * set the input parser for the handler
-   */
-  input<T>(_input?: T) {
-    return new HandlerBuilder<Overwrite<THandler, { _input: inferParser<T> }>>({ ...this, _input })
-  }
-
-  /**
-   * set the pre-resolver function
-   */
-  preResolve<T>(_preResolver: T) {
-    return new HandlerBuilder<Overwrite<THandler, { _preResolver: T }>>({ ...this, _preResolver })
-  }
-
-  /**
-   * set the parser
-   */
-  parse<T>(_parser: T) {
-    return new HandlerBuilder<Overwrite<THandler, { _parser: T }>>({ ...this, _parser })
-  }
-
-  /**
-   * set the resolver function
-   */
-  resolve<T>(_resolver: (args: { input: THandler['_input'], ctx: THandler['_ctx'] }) => T) {
-    return new HandlerBuilder<Overwrite<THandler, { _resolver: typeof _resolver, _output: T }>> ({ ...this, _resolver })
-  }
-
-  /**
-   * set the post-resolver function
-   */
-  postResolve<T>(_postResolver: T) {
-    return new HandlerBuilder({ ...this, _postResolver })
+  build<
+    Method extends AnyHttpMethod=T['_method'],
+    Path=T['_path'],
+    Ctx=T['_ctx'],
+    Schema=T['_schema'],
+    Input=T['_input'],
+    Output=T['_output'],
+    PreResolver=T['_preResolver'],
+    Parser=T['_parser'],
+    PostResolver=T['_postResolver']
+    >
+    (args: {
+      _method?: Method
+      _path?: Path
+      _ctx?: Ctx extends Context<infer I> ? I: Ctx
+      _schema?: Schema
+      _input?: Input
+      _output?: Output
+      _preResolver?: PreResolver
+      _parser?: Parser
+      _resolver?: (args: { input: Schema extends undefined ? Input : inferParser<Schema>, ctx: Context<Ctx> }) => Output 
+      _postResolver?: PostResolver
+    }={}) {
+    return new HandlerBuilder<Required<typeof args>>(args)
   }
 }

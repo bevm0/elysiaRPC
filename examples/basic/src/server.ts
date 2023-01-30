@@ -10,6 +10,7 @@ async function start() {
       res.end(await (internalServer as any)[req.url]({ input: Infinity, ctx: undefined }))
     }
     else {
+      console.log({internalServer, serverHooks})
       res.end(`Not Found, available routes: ${Object.keys(internalServer).join(', ')}`)
     }
   }).listen(3000)

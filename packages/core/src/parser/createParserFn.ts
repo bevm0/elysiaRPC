@@ -29,6 +29,6 @@ export function getParseFn<TType>(procedureParser: Parser): ParseFn<TType> {
     // ProcedureParserSuperstructEsque
     return parser.create.bind(parser);
   }
-
-  throw new Error('Could not find a validator fn');
+  return async (arg: any) => arg;
+  // throw new Error('Could not find a validator fn');
 }
