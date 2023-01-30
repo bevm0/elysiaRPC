@@ -6,9 +6,9 @@ import type { Transform, Flatten } from '../utils'
  * @internal the actual flattened object returned by the internal fetch hooks
  */
 export type InternalServerHooks<TRouter> = {
-  [k in keyof Flatten<TRouter, HandlerBuilder<Handler>, '_path'>]: 
-    Flatten<TRouter, HandlerBuilder<Handler>, '_path'>[k] extends HandlerBuilder<Handler> ? 
-      Flatten<TRouter, HandlerBuilder<Handler>, '_path'>[k]['handle'] : 
+  [k in keyof Flatten<TRouter, HandlerBuilder<Handler>>]: 
+    Flatten<TRouter, HandlerBuilder<Handler>>[k] extends HandlerBuilder<Handler> ? 
+      Flatten<TRouter, HandlerBuilder<Handler>>[k]['handle'] : 
       never
 }
 

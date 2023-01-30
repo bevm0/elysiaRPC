@@ -1,7 +1,7 @@
 /**
- * overwrite properties in T with corresponding ones in U
+ * overwrite any mutual properties in Old with corresponding ones in New 
  */
-export type Overwrite<T, U> = Pick<T, Exclude<keyof T, keyof U>> & U
+export type Overwrite<Old, New> = Pick<Old, Exclude<keyof Old, keyof New>> & New
 
 /**
  * removes undefined properties from an object
@@ -11,21 +11,21 @@ export type CleanType<T extends object> = {
 }
 
 /**
- * helper interface for explode
+ * helper interface for explode and collapse
  */
 export type Entry = { key: any, value: any, optional: boolean };
 
 /** 
- * @see {@link https://stackoverflow.com/questions/69095054/how-to-deep-flatten-a-typescript-interface-with-union-types-and-keep-the-full-ob}
+ * helper for flatten
  */
-export type Explode<T, TObj, Key extends keyof TObj> =
+export type Explode<T, TObj> =
     T extends TObj ? {
-      key: T[Key],
+      key: "",
       value: T,
       optional: false
     } : { 
       [K in keyof T]: 
-        K extends string ? Explode<T[K], TObj, Key> extends infer E ? E extends Entry ?
+        K extends string ? Explode<T[K], TObj> extends infer E ? E extends Entry ?
         {
             key: `${K}${E['key']}`,
             value: E['value'],
@@ -35,7 +35,7 @@ export type Explode<T, TObj, Key extends keyof TObj> =
   }[keyof T] 
 
 /**
- * helper type for flatten
+ * helper for flatten
  */
 export type Collapse<T extends Entry> = (
     { 
@@ -48,15 +48,16 @@ export type Collapse<T extends Entry> = (
     }
     >) extends infer O ? { [K in keyof O]: O[K] } : never
 
-/**
+/** 
  * flattens an object
+ * @see {@link https://stackoverflow.com/questions/69095054/how-to-deep-flatten-a-typescript-interface-with-union-types-and-keep-the-full-ob}
  */
-export type Flatten<T, TObj, Key extends keyof TObj> = Collapse<Explode<T, TObj, Key>>
+export type Flatten<T, TObj> = Collapse<Explode<T, TObj>>
 
 /**
- * transform all values of an object to a key
+ * deeply map all properties of an object to the key of a value
  */
-export type Transform<PRecord extends Record<any, any>, TObject, Key extends keyof TObject, Key2 extends keyof TObject> = {
-  [k in keyof PRecord as PRecord[k] extends TObject ? k extends string ? `${k}${PRecord[k][Key2]}` : k : k]: 
-    PRecord[k] extends TObject ? PRecord[k][Key] : Transform<PRecord[k], TObject, Key, Key2>
+export type Transform<PRecord extends Record<any, any>, TObject, Key extends keyof TObject> = {
+  [k in keyof PRecord]: 
+    PRecord[k] extends TObject ? PRecord[k][Key] : Transform<PRecord[k], TObject, Key>
 }

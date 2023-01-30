@@ -7,9 +7,9 @@ import type { Transform, Flatten } from '../utils'
  * @internal the actual flattened object returned by the internal fetch hooks
  */
 export type InternalClientHooks<TRouter> = {
-  [k in keyof Flatten<TRouter, HandlerBuilder<Handler>, '_path'>]: 
-    Flatten<TRouter, HandlerBuilder<Handler>, '_path'>[k] extends HandlerBuilder<Handler> ? 
-      Flatten<TRouter, HandlerBuilder<Handler>, '_path'>[k]['fetch'] : 
+  [k in keyof Flatten<TRouter, HandlerBuilder<Handler>>]: 
+    Flatten<TRouter, HandlerBuilder<Handler>>[k] extends HandlerBuilder<Handler> ? 
+      Flatten<TRouter, HandlerBuilder<Handler>>[k]['fetch'] : 
       never
 }
 
@@ -18,7 +18,7 @@ export type InternalClientHooks<TRouter> = {
  */
 interface ClientHooks<T extends Record<any, any>> {
   internal: InternalClientHooks<T>
-  hooks: Transform<T, HandlerBuilder<Handler>, 'fetch', '_path'>
+  hooks: Transform<T, HandlerBuilder<Handler>, 'fetch'>
 }
 
 /**
@@ -30,7 +30,6 @@ export function createClientHooks<T extends Record<any, any>> (current: T, base=
   let internal: any = {}
   let hooks: any = {}
   let x: any
-  let f: any
 
   for (key in current) {
     if ('_path' in current[key]) {
