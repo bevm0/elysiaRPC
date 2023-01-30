@@ -29,9 +29,22 @@ interface ServerHooks<T extends Record<any, any>> {
 }
 
 /**
+ * server options
+ */
+interface ServerOpts {
+}
+
+/**
  * create server hooks
  */
-export function createServerHooks<T extends Record<any, any>> (current: T, base=''): ServerHooks<T> {
+export function createServerHooks<T extends Record<any, any>> (current: T, opts?: ServerOpts): ServerHooks<T> {
+  return createInnerServerHooks(current, '', opts)
+}
+
+/**
+ * create server hooks
+ */
+export function createInnerServerHooks<T extends Record<any, any>> (current: T, base='', opts?: ServerOpts): ServerHooks<T> {
   let internal: any = {}
   let hooks: any = {}
   let recursiveHooks: any = {}

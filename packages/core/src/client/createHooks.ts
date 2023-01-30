@@ -1,5 +1,5 @@
-import { createFetch } from './fetch'
-import type { FetchOpts, TypedResponse } from './fetch'
+import { createFetch } from './createFetch'
+import type { FetchOpts, TypedResponse } from './createFetch'
 import type { Handler } from '../types'
 import type { Flatten } from '../utils'
 import type { HandlerBuilder } from '../handler'
@@ -46,9 +46,14 @@ export function createClientHooks<T extends Record<any, any>> (current: T, opts?
 }
 
 /**
+ * client options
+ */
+interface ClientOpts extends FetchOpts {}
+
+/**
  * internal fetch hooks are used to create the fetch functions
  */
-function createInnerClientHooks<T extends Record<any, any>> (current: T, base='', opts?: FetchOpts): ClientHooks<T> {
+function createInnerClientHooks<T extends Record<any, any>> (current: T, base='', opts?: ClientOpts): ClientHooks<T> {
   let internal: any = {}
   let hooks: any = {}
   let recursiveHooks: any = {}
