@@ -10,8 +10,14 @@ export const r = build({
   _method: 'Welcome',
   _path: 'Rem',
   _schema: Type.Boolean(),
+  _preResolver: () => {
+    return 69
+  },
+  _parser: () => {
+    return 123
+  },
   _resolver(args) {
-    return args.ctx
+    return args.input
   },
 })
 
@@ -26,9 +32,14 @@ export type g = typeof r['_path']
 export const routerRecord = {
   '/a': {
     b: build({
+      _parser: () => {
+        return {
+          input: 'hi'
+        }
+      },
+      _resolver: (args) => `Hello, ${args.input}`,
       _method: 'POST',
       _schema: Type.Number(),
-      _resolver: (args) => `Hello, ${args.input}`
     }),
     c: {
       d: {
@@ -43,5 +54,3 @@ export const routerRecord = {
     }
   },
 }
-
-export type rem = typeof routerRecord['/a']['c']['d']['g']

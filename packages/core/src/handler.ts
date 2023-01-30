@@ -40,10 +40,17 @@ export class HandlerBuilder<T extends Handler=UninitializedHandler> {
     Ctx=T['_ctx'],
     Schema=T['_schema'],
     Input=T['_input'],
-    Output=T['_output'],
-    PreResolver=T['_preResolver'],
-    Parser=T['_parser'],
-    PostResolver=T['_postResolver']
+    PreResolver=undefined,
+    Parser=PreResolver extends (...args: any[]) => infer PreResolverOutput ? (args: PreResolverOutput) => undefined : any,
+    Resolver=(args: 
+              Parser extends (...args: any[]) => infer PP ? 
+                { input: PP, ctx: Context<Ctx> } :
+                  PreResolver extends (...args: any[]) => infer PreResolverOutput ?
+                  { input: PreResolverOutput, ctx: Context<Ctx> } :
+                      { input: Schema extends undefined ? Input : inferParser<Schema>, ctx: Context<Ctx> } 
+             ) => undefined,
+    PostResolver=(args: { input: any, ctx: Context<Ctx> }) => any,
+    Output=Resolver extends (...args: any[]) => infer O ? O : undefined,
     >
     (args: {
       _method?: Method
@@ -54,7 +61,7 @@ export class HandlerBuilder<T extends Handler=UninitializedHandler> {
       _output?: Output
       _preResolver?: PreResolver
       _parser?: Parser
-      _resolver?: (args: { input: Schema extends undefined ? Input : inferParser<Schema>, ctx: Context<Ctx> }) => Output 
+      _resolver?: Resolver
       _postResolver?: PostResolver
     }={}) {
     return new HandlerBuilder<Required<typeof args>>(args)
