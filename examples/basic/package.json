@@ -5,5 +5,8 @@
   "dependencies": {
     "@elysiaRPC/core": "*",
     "@sinclair/typebox": "^0.25.21"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.4"
   }
 }

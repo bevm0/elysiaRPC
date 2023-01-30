@@ -1,0 +1,8 @@
+{
+  "name": "@elysiaRPC/adapters",
+  "version": "0.1.0",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "typescript": "^4.9.4"
+  }
+}

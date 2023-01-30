@@ -1,43 +1,53 @@
-import { HandlerBuilder, Handler } from '../handler'
-import type { Transform, Flatten } from '../utils'
+import { createResolver } from './createResolver'
+import type { Handler } from '../types'
+import type { Flatten } from '../utils'
+import type { HandlerBuilder } from '../handler'
 
 /**
- * strongly type the returned fetch hooks
- * @internal the actual flattened object returned by the internal fetch hooks
+ * internal server hooks
  */
 export type InternalServerHooks<TRouter> = {
   [k in keyof Flatten<TRouter, HandlerBuilder<Handler>>]: 
     Flatten<TRouter, HandlerBuilder<Handler>>[k] extends HandlerBuilder<Handler> ? 
-      Flatten<TRouter, HandlerBuilder<Handler>>[k]['handle'] : 
+      Flatten<TRouter, HandlerBuilder<Handler>>[k]['_resolver'] : 
       never
 }
 
 /**
- * hooks generated for the client
+ * public server hooks
  */
-interface ServerHooks<T extends Record<any, any>> {
-  internal: InternalServerHooks<T>
-  hooks: Transform<T, HandlerBuilder<Handler>, 'handle'>
+export type PublicServerHooks<T> = {
+  [k in keyof T]: T[k] extends HandlerBuilder<Handler> ? T[k]['_resolver'] : PublicServerHooks<T>
 }
 
 /**
- * internal fetch hooks are used to create the fetch functions
+ * all hooks generated for the server
+ */
+interface ServerHooks<T extends Record<any, any>> {
+  internal: InternalServerHooks<T>
+  hooks: PublicServerHooks<T>
+}
+
+/**
+ * create server hooks
  */
 export function createServerHooks<T extends Record<any, any>> (current: T, base=''): ServerHooks<T> {
-  let key: string
   let internal: any = {}
   let hooks: any = {}
-  let x: any
+  let recursiveHooks: any = {}
+  let resolver: any
+  let key = ''
 
   for (key in current) {
     if ('_path' in current[key]) {
-      internal[`${base}${key}${current[key]._path || ''}`] =  current[key].handle
-      hooks[key] = current[key].handle
+      resolver = createResolver(current[key])
+      internal[`${base}${key}`] = resolver
+      hooks[key] = resolver
     }
     else {
-      x = createServerHooks(current[key], `${base}${key}`)
-      internal = { ...internal, ...x.internal }
-      hooks[key] = x.client
+      recursiveHooks = createServerHooks(current[key], `${base}${key}`)
+      internal = { ...internal, ...recursiveHooks.internal }
+      hooks[key] = recursiveHooks.hooks
     }
   }
   return {

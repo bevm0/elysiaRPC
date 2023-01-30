@@ -1,20 +1,40 @@
+import type { Handler } from '../types'
+
 /**
  * typed response from fetch request
  */
-interface TypedResponse<Output> extends Response {
+export interface TypedResponse<Output> extends Response {
   json(): Promise<Output>
+}
+
+/**
+ * options for create fetch
+ */
+export interface FetchOpts {
+  baseUrl?: string
 }
 
 /**
  * wrapper around fetch
  */
-export const createFetch = <Output>(path: string, input: any, init: RequestInit): Promise<TypedResponse<Output>> => {
+export function createFetch(handler: Handler, path='', opts?: FetchOpts) {
+  let url = `${opts?.baseUrl || ''}${path}`
+
+  if (handler._input || handler._schema) {
+    return (input: any, init?: RequestInit) => 
+      fetchWrapper(url, input, { method: handler._method, ...init }) as Promise<TypedResponse<Handler['_output']>>
+  }
+  return (init?: RequestInit) => 
+    fetchWrapper(url, undefined, { method: handler._method, ...init }) as Promise<TypedResponse<Handler['_output']>>
+}
+
+function fetchWrapper(path='', input: any, init?: RequestInit) {
   /**
    * if GET request, then encode the input as a query string
    */
-  if (init.method === 'GET') {
-    const query = input ? new URLSearchParams(input) : ''
-    return fetch(`${path}/${query.toString()}`, init)
+  if (init?.method === 'GET') {
+    const query = input ? `?${new URLSearchParams(input).toString()}` : ''
+    return fetch(`${path}${query}`, init)
   }
 
   /**
@@ -31,7 +51,6 @@ export const createFetch = <Output>(path: string, input: any, init: RequestInit)
      * @see {@link https://muffinman.io/blog/uploading-files-using-fetch-multipart-form-data/}
      */
     delete init.headers['Content-Type']
-
     return fetch(path, { body: formData, ...init })
   }
 

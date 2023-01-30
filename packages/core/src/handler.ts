@@ -1,61 +1,8 @@
-import { Static } from '@sinclair/typebox'
-import type { TSchema } from '@sinclair/typebox/typebox'
+import type { Handler, UninitializedHandler } from './types'
 import type { AnyHttpMethod } from './http/methods'
-import type { CleanType, Overwrite } from './utils'
 import type { Context } from './server/context'
-
-/**
- * generic request handler
- */
-export interface Handler {
-  /**
-   * type of HTTP request (custom allowed)
-   */
-  _method: any
-
-  /**
-   * URL for the request
-   */
-  _path: any
-
-  /**
-   * data shared between resolvers
-   */
-  _ctx: any
-
-  /**
-   * schema to parse the input
-   */
-  _schema: any
-
-  /**
-   * input to the resolver
-   */
-  _input: any
-
-  /**
-   * output of the resolver
-   */
-  _output: any
-
-  /**
-   * request resolver
-   */
-  _resolver: any
-}
-
-/**
- * uninitialized request handler
- */
-export interface UninitializedHandler extends Handler{
-  _method: undefined
-  _path: undefined
-  _ctx: undefined
-  _schema: undefined
-  _input: undefined
-  _output: undefined
-  _resolver: undefined
-}
+import type { inferParser } from './parser/types'
+import type { Overwrite } from './utils'
 
 /**
  * request handler builder
@@ -64,26 +11,33 @@ export class HandlerBuilder<THandler extends Handler=UninitializedHandler> {
   _method: THandler['_method']
   _path: THandler['_path']
   _ctx: THandler['_ctx']
+  _schema: THandler['_schema']
   _input: THandler['_input']
   _output: THandler['_output']
+  _preResolver: THandler['_preResolver']
+  _parser: THandler['_parser']
   _resolver: THandler['_resolver']
-  _schema: THandler['_schema']
+  _postResolver: THandler['_postResolver']
 
-  constructor(args: Partial<Handler> = {}) {
+  constructor(args: Partial<Handler>={}) {
     this._method = args._method
     this._path = args._path
-    this._input = args._input
-    this._resolver = args._resolver
-    this._output = args._output
     this._ctx = args._ctx
     this._schema = args._schema
+    this._input = args._input
+    this._output = args._output
+    this._preResolver = args._preResolver
+    this._parser = args._parser
+    this._resolver = args._resolver
+    this._postResolver = args._postResolver
   }
 
   /**
    * set HTTP method and path (URL) for the handler
+   * TODO for TypeScript 5.0: add const modifier to generics
    */
-  route<TMethod extends AnyHttpMethod, const TPath extends string>
-        (_method: TMethod, _path: TPath): 
+  route<TMethod extends AnyHttpMethod, TPath extends string>
+        (_method: TMethod, _path?: TPath): 
           HandlerBuilder<Overwrite<THandler, { _method: TMethod, _path: TPath }>> {
     return new HandlerBuilder({ ...this, _method, _path })
   }
@@ -91,70 +45,42 @@ export class HandlerBuilder<THandler extends Handler=UninitializedHandler> {
   /**
    * define the context
    */
-  context<TContext>(_ctx?: Context<TContext>): HandlerBuilder<Overwrite<THandler, { _ctx: TContext }>> {
-    return new HandlerBuilder({ ...this, _ctx })
+  context<T>(_ctx?: Context<T>) {
+    return new HandlerBuilder<Overwrite<THandler, { _ctx: T }>>({ ...this, _ctx })
   }
 
   /**
    * set the input parser for the handler
-   * narrow the _input type for the new builder, but actually set the _schema property for parsing
    */
-  input<TInput>(_schema?: TInput): HandlerBuilder<Overwrite<THandler, { _input: InputArgs<TInput> }>> {
-    return new HandlerBuilder({ ...this, _schema })
+  input<T>(_input?: T) {
+    return new HandlerBuilder<Overwrite<THandler, { _input: inferParser<T> }>>({ ...this, _input })
+  }
+
+  /**
+   * set the pre-resolver function
+   */
+  preResolve<T>(_preResolver: T) {
+    return new HandlerBuilder<Overwrite<THandler, { _preResolver: T }>>({ ...this, _preResolver })
+  }
+
+  /**
+   * set the parser
+   */
+  parse<T>(_parser: T) {
+    return new HandlerBuilder<Overwrite<THandler, { _parser: T }>>({ ...this, _parser })
   }
 
   /**
    * set the resolver function
    */
-  resolve<Output>(_resolver: (args: ResolveArgs<THandler>) => Output):
-      HandlerBuilder<Overwrite<THandler, { _resolver: typeof _resolver, _output: Output }>> {
-    return new HandlerBuilder({ ...this, _resolver })
+  resolve<T>(_resolver: (args: { input: THandler['_input'], ctx: THandler['_ctx'] }) => T) {
+    return new HandlerBuilder<Overwrite<THandler, { _resolver: typeof _resolver, _output: T }>> ({ ...this, _resolver })
   }
 
   /**
-   * server-side: handle a request
-   * @param args inferred for the resolver
-   * @returns the resolver's output
+   * set the post-resolver function
    */
-  handle(args: ResolveArgs<THandler>): this['_output'] {
-    return this._resolver(args)
+  postResolve<T>(_postResolver: T) {
+    return new HandlerBuilder({ ...this, _postResolver })
   }
-
-  /**
-   * client-side: make a request
-   * @param args the input for this handler
-   * @returns fetch request to get the data
-   * @remarks not actually assigned; used only for type info, dynamically during runtime
-   */
-  fetch: FetchSignature<THandler> = (...args: any[]) => {
-    /**
-     * not the real implementation of fetch!
-     */
-    return args as any
-  }
-
 }
-
-/**
- * fetch signature
- * @remarks function requires input parameter if it's defined, otherwise excluded
- */
-type FetchSignature<THandler extends Handler> = 
-  THandler['_input'] extends undefined ? 
-    (init?: RequestInit) => Promise<THandler['_output']> : 
-      (input: THandler['_input'], init?: RequestInit) => Promise<THandler['_output']>
-
-/**
- * input validator can be 
- * - an instance of the type itself
- * - function to validate the input
- * - Typebox schema
- */
-export type InputArgs<T> = T extends TSchema ? Static<T> : T extends (...args: any[]) => infer Output ? Output : T
-
-/**
- * arguments to the resolve function
- * @remarks excludes input and/or ctx from the object if they're undefined
- */
-type ResolveArgs<THandler extends Handler> = 
-  CleanType<{ input: THandler['_input'], ctx: THandler['_ctx'] }>
