@@ -1,7 +1,7 @@
 import type { Handler, UninitializedHandler } from './types'
 import type { AnyHttpMethod } from './http/methods'
-import type { Context } from './server/context'
 import type { inferParser } from './parser/types'
+import type { Context } from './server/context'
 import type { Overwrite } from './utils'
 
 /**

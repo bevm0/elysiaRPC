@@ -4,13 +4,6 @@
 export type Overwrite<Old, New> = Pick<Old, Exclude<keyof Old, keyof New>> & New
 
 /**
- * removes undefined properties from an object
- */
-export type CleanType<T extends object> = {
-  [P in keyof T as T[P] extends undefined ? never : P]: T[P]
-}
-
-/**
  * helper interface for explode and collapse
  */
 export type Entry = { key: any, value: any, optional: boolean };
@@ -19,20 +12,22 @@ export type Entry = { key: any, value: any, optional: boolean };
  * helper for flatten
  */
 export type Explode<T, TObj> =
-    T extends TObj ? {
-      key: "",
-      value: T,
-      optional: false
-    } : { 
-      [K in keyof T]: 
-        K extends string ? Explode<T[K], TObj> extends infer E ? E extends Entry ?
-        {
-            key: `${K}${E['key']}`,
-            value: E['value'],
-            optional: E['key'] extends "" ? {} extends Pick<T, K> ? true : false : E['optional']
-        }
-        : never : never : never
-  }[keyof T] 
+    T extends TObj ? 
+      { key: "", value: T, optional: false } : 
+      { 
+        [K in keyof T]: 
+          K extends string ? 
+            Explode<T[K], TObj> extends infer E ? 
+              E extends Entry ?
+                {
+                    key: `${K}${E['key']}`,
+                    value: E['value'],
+                    optional: E['key'] extends "" ? {} extends Pick<T, K> ? true : false : E['optional']
+                } : 
+                never : 
+              never : 
+            never
+      }[keyof T] 
 
 /**
  * helper for flatten
@@ -53,11 +48,3 @@ export type Collapse<T extends Entry> = (
  * @see {@link https://stackoverflow.com/questions/69095054/how-to-deep-flatten-a-typescript-interface-with-union-types-and-keep-the-full-ob}
  */
 export type Flatten<T, TObj> = Collapse<Explode<T, TObj>>
-
-/**
- * deeply map all properties of an object to the key of a value
- */
-export type Transform<PRecord extends Record<any, any>, TObject, Key extends keyof TObject> = {
-  [k in keyof PRecord]: 
-    PRecord[k] extends TObject ? PRecord[k][Key] : Transform<PRecord[k], TObject, Key>
-}
