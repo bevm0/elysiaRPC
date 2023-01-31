@@ -4,53 +4,58 @@ import { Type } from '@sinclair/typebox'
 //-----------------------------------------------------------------------------------
 // single source of truth for the server and client
 //-----------------------------------------------------------------------------------
-const { build } = new HandlerBuilder()
+const handler = new HandlerBuilder()
 
-export const r = build({
-  _method: 'Welcome',
-  _path: 'Rem',
-  _schema: Type.Boolean(),
-  _preResolver: () => {
-    return 69
-  },
-  _parser: () => {
-    return 123
-  },
-  _resolver(args) {
-    return args.input
-  },
-})
+export const r = handler
+  .init({ _method: 'POST', _path: '/post', _ctx: 123, _schema: Type.Date() })
+  .preResolve(k => k)
+  .parse(k => k)
+  .resolve(k => k)
+  .postResolve(k => k)
 
 export type a = typeof r['_method']
-export type b = typeof r['_input']
-export type c = typeof r['_schema']
-export type d = typeof r['_output']
-export type e = typeof r['_ctx']
-export type f = typeof r['_resolver']
-export type g = typeof r['_path']
+export type b = typeof r['_ctx']
+export type c = typeof r['_input']
+export type d = typeof r['_schema']
+export type e = typeof r['_preResolver']
+export type f = typeof r['_parser']
+export type g = typeof r['_resolver']
+export type h = typeof r['_postResolver']
+export type i = typeof r['_output']
 
 export const routerRecord = {
   '/a': {
-    b: build({
-      _parser: () => {
-        return {
-          input: 'hi'
+
+    /**
+     * maximal example
+     */
+    b: handler
+      .init({ 
+        _method: 'POST',
+        _path: '/post',
+        _ctx: 123,
+        _schema: Type.Date()
+      })
+      .preResolve(() => ({ input: 123, ctx: 'no' }))
+      .parse(k => {
+        if (typeof k === 'boolean') {
+          throw new Error('NO')
         }
-      },
-      _resolver: (args) => `Hello, ${args.input}`,
-      _method: 'POST',
-      _schema: Type.Number(),
-    }),
-    c: {
-      d: {
-        e: build({
-          _method: 'PATCH',
-          _schema: Type.String(),
-          _resolver: (args) => `nested route: ${args.input}`,
-        }),
-        f: build({ _method: 'GET', _resolver: () => 12345 }),
-        g: build({ _ctx: 69420, _input: 'super epic', _resolver: (args) => args.input })
-      }
-    }
-  },
+        return k.toString()
+      })
+      .resolve(k => {
+        const n = k.input + 10
+        return n + 420 + 69
+      })
+      .postResolve(k => {
+        return parseInt(k.ctx, 10)
+      }),
+
+    /**
+     * minimal example
+     */
+    c: handler.init({ _method: 'CONNECT', _schema: Type.Uint8Array() }).resolve((k) => k.input)
+  }
 }
+
+export type x = typeof routerRecord['/a']['b']['_output']
